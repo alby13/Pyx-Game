@@ -1,7 +1,7 @@
 # Pyx Game
 Qix inspired Arcade Game in Python
 
-
+<br>
 ## Software License Agreement
 
 **Grant of Rights**: You are granted a worldwide, royalty-free, non-exclusive license to use, modify, and distribute the Software along with your source code changes.
