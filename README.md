@@ -1,5 +1,5 @@
 # Pyx-Game
-Qix Arcade Game in Python
+Qix inspired Arcade Game in Python
 
 
 ## Software License Agreement
