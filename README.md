@@ -1,4 +1,4 @@
-# Pyx-Game
+# Pyx Game
 Qix inspired Arcade Game in Python
 
 
