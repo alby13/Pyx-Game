@@ -9,6 +9,11 @@ WIDTH, HEIGHT = 1920, 1080
 FPS = 60
 TARGET_FILL_PERCENTAGE = 75
 
+# Game States
+MENU = "menu"
+GAME = "game"
+INSTRUCTIONS = "instructions"
+
 # Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -18,6 +23,82 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Qix Rainbow Edition')
 clock = pygame.time.Clock()
+
+class Menu:
+    def __init__(self):
+        self.state = MENU
+        self.background = None
+
+        import os
+        current_dir = os.getcwd()
+        image_path = os.path.join(current_dir, "assets", "start_screen.jpg")
+
+        try:
+            self.background = pygame.image.load("assets/start_screen.jpg")
+            self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
+        except:
+            self.background = pygame.Surface((WIDTH, HEIGHT))
+            self.background.fill(BLACK)
+        
+        self.font_large = pygame.font.SysFont(None, 72)
+        self.font_medium = pygame.font.SysFont(None, 48)
+        
+        self.instructions_text = [
+            "How to Play",
+            "",
+            "Objective: Fill 75% of the screen by drawing lines to trap the PYX enemies.",
+            "",
+            "Move: Use Arrow Keys to move along the border or your filled areas.",
+            "",
+            "Draw: Press Space to start drawing a line from the border.",
+            "",
+            "Move to create a shape and return to the border to close it.",
+            "",
+            "Avoid: Don't touch the PYX (spiky enemies) or let them touch your drawing line!",
+            "",
+            "Win: Fill enough area (75%) to win the level.",
+            "",
+            "Lose: Hit the PYX, and it's game over.",
+            "",
+            "Restart: Press R if you win or lose to try again.",
+            "",
+            "Change Settings, Restart, and Quit using the [Escape Key] Menu. ",
+            "",
+            "Press [Space Key] or [Enter Key] to Start!"
+        ]
+
+    def draw_menu(self, surface):
+        # Draw background
+        surface.blit(self.background, (0, 0))
+        
+        # Draw menu text
+        start_text = self.font_large.render("Press [Space] or [Enter] to Start", True, WHITE)
+        instruction_text = self.font_large.render("Press 'i' for Instructions", True, WHITE)
+        
+        # Position text at bottom of screen
+        start_text_rect = start_text.get_rect(centerx=WIDTH/2, bottom=HEIGHT-100)
+        instruction_text_rect = instruction_text.get_rect(centerx=WIDTH/2, bottom=HEIGHT-30)
+        
+        surface.blit(start_text, start_text_rect)
+        surface.blit(instruction_text, instruction_text_rect)
+
+    def draw_instructions(self, surface):
+        # Semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT))
+        overlay.fill(BLACK)
+        overlay.set_alpha(230)
+        surface.blit(overlay, (0, 0))
+        
+        y_position = 50
+        for i, line in enumerate(self.instructions_text):
+            if i == 0:  # Title
+                text = self.font_large.render(line, True, WHITE)
+            else:
+                text = self.font_medium.render(line, True, WHITE)
+            
+            text_rect = text.get_rect(centerx=WIDTH/2, y=y_position)
+            surface.blit(text, text_rect)
+            y_position += 45
 
 # --------------------------- Utility Functions ---------------------------
 
@@ -509,8 +590,10 @@ def display_message(surface, message):
     pygame.time.wait(3000)
 
 # --------------------------- Main Game Loop ---------------------------
-def main():  # Moved main function outside of the Qix Class
+def main():
     # Initialize game state variables
+    menu = Menu()
+    game_state = MENU
     level = 1
     total_area = WIDTH * HEIGHT
     player = Player()
@@ -524,90 +607,103 @@ def main():  # Moved main function outside of the Qix Class
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-            # Start drawing with spacebar
+
             if event.type == KEYDOWN:
-                if event.key == K_SPACE and not player.drawing:
-                    player.start_drawing()
-                # Press R to restart after game over/win
-                if event.key == K_r and (game_over or game_win):
-                    return  # Restart by returning from main()
+                if game_state == MENU:
+                    if event.key in (K_SPACE, K_RETURN):
+                        game_state = GAME
+                    elif event.key == K_i:
+                        game_state = INSTRUCTIONS
+                elif game_state == INSTRUCTIONS:
+                    if event.key in (K_SPACE, K_RETURN, K_ESCAPE):
+                        game_state = MENU
+                elif game_state == GAME:
+                    if event.key == K_SPACE and not player.drawing:
+                        player.start_drawing()
+                    if event.key == K_r and (game_over or game_win):
+                        return  # Restart by returning from main()
 
-        # --- Get Key States for Movement ---
-        keys = pygame.key.get_pressed()
-        dx = 0
-        dy = 0
-        if keys[K_LEFT]:
-            dx = -1
-        if keys[K_RIGHT]:
-            dx = 1
-        if keys[K_UP]:
-            dy = -1
-        if keys[K_DOWN]:
-            dy = 1
-
-        # Only update game state if not game over or win
-        if not (game_over or game_win):
-            player.move(dx, dy)
-
-            # Update each enemy
-            for qix in enemies:
-                qix.update(player.filled_areas)
-
-            # Check for collision events (player or drawing hit an enemy)
-            if check_collision(player, enemies):
-                game_over = True
-                player.stop_drawing()  # Stop drawing if collision happens
-
-            # Check win condition by the percentage of fill area
-            fill_percentage = calculate_area_percentage(player.filled_areas, total_area)
-            if fill_percentage >= TARGET_FILL_PERCENTAGE:
-                game_win = True
-
-        # --- Drawing Section ---
+        # Clear screen
         screen.fill(BLACK)
-        draw_game_boundary(screen)
 
-        for qix in enemies:
-            qix.draw(screen)
-        player.draw(screen)
+        if game_state == MENU:
+            menu.draw_menu(screen)
+        elif game_state == INSTRUCTIONS:
+            menu.draw_instructions(screen)
+        elif game_state == GAME:
+            # --- Get Key States for Movement ---
+            keys = pygame.key.get_pressed()
+            dx = 0
+            dy = 0
+            if keys[K_LEFT]:
+                dx = -1
+            if keys[K_RIGHT]:
+                dx = 1
+            if keys[K_UP]:
+                dy = -1
+            if keys[K_DOWN]:
+                dy = 1
 
-        # Display score/fill percentage on top-left
-        font = pygame.font.SysFont(None, 36)
-        info = font.render(f"Fill: {fill_percentage:0.1f}%   Level: {level}", True, WHITE)
-        screen.blit(info, (10, 10))
+            # Only update game state if not game over or win
+            if not (game_over or game_win):
+                player.move(dx, dy)
 
-        # Display controls
-        controls = font.render("SPACE to start drawing | Arrow keys to move | R to restart", True, WHITE)
-        screen.blit(controls, (10, HEIGHT - 40))
+                # Update each enemy
+                for qix in enemies:
+                    qix.update(player.filled_areas)
+
+                # Check for collision events
+                if check_collision(player, enemies):
+                    game_over = True
+                    player.stop_drawing()
+
+                # Check win condition
+                fill_percentage = calculate_area_percentage(player.filled_areas, total_area)
+                if fill_percentage >= TARGET_FILL_PERCENTAGE:
+                    game_win = True
+
+            # --- Drawing Section ---
+            draw_game_boundary(screen)
+
+            for qix in enemies:
+                qix.draw(screen)
+            player.draw(screen)
+
+            # Display score/fill percentage
+            font = pygame.font.SysFont(None, 36)
+            info = font.render(f"Fill: {fill_percentage:0.1f}%   Level: {level}", True, WHITE)
+            screen.blit(info, (10, 10))
+
+            # Display controls
+            controls = font.render("PYX", True, WHITE)
+            screen.blit(controls, (10, HEIGHT - 40))
+
+            if game_over:
+                display_message(screen, "Game Over! Press R to Restart")
+                waiting_for_input = True
+                while waiting_for_input:
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if event.type == KEYDOWN:
+                            if event.key == K_r:
+                                waiting_for_input = False
+
+            if game_win:
+                display_message(screen, "You Win! Press R to Restart")
+                waiting_for_input = True
+                while waiting_for_input:
+                    for event in pygame.event.get():
+                        if event.type == QUIT:
+                            pygame.quit()
+                            sys.exit()
+                        if event.type == KEYDOWN:
+                            if event.key == K_r:
+                                waiting_for_input = False
 
         pygame.display.flip()
         clock.tick(FPS)
 
-        # --- End-of-Game Checks ---
-        if game_over:
-            display_message(screen, "Game Over! Press R to Restart")
-            #wait for input to prevent the game from immediately resetting
-            waiting_for_input = True
-            while waiting_for_input:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == KEYDOWN:
-                        if event.key == K_r:
-                            waiting_for_input = False
-
-        if game_win:
-            display_message(screen, "You Win! Press R to Restart")
-            #wait for input to prevent the game from immediately resetting
-            waiting_for_input = True
-            while waiting_for_input:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == KEYDOWN:
-                        if event.key == K_r:
-                            waiting_for_input = False
 if __name__ == '__main__':
     main()
