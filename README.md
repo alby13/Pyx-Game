@@ -4,7 +4,7 @@ Qix inspired Arcade Game in Python
 
 ## Software License Agreement
 
-**Grant of Rights**: You are granted a worldwide, royalty-free, non-exclusive license to use, modify, and distribute the Software along with your source code changes.
+**Grant of Rights**: You are granted a worldwide, royalty-free, non-exclusive license to use, modify, and non-commercially distribute the Software along with your source code changes.
 
 **Restrictions**:
 
