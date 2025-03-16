@@ -1,3 +1,5 @@
+# Created by alby13 , in the USA , with Computer & Coding Love
+
 import pygame
 import sys
 import math
